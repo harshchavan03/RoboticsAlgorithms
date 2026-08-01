@@ -92,7 +92,7 @@ for ax, (title, Q, R, color) in zip(axes.flatten(), configs):
     )
 
     ax.set_xlabel("Timestep")
-
+	
     ax.set_ylabel("Value")
 
     ax.grid(
@@ -110,4 +110,9 @@ plt.suptitle(
     fontsize=15,
 )
 plt.tight_layout()
+plt.savefig(
+    "parameter_sensitivity_analysis.png",
+    dpi=300,
+    bbox_inches="tight"
+)
 plt.show()
