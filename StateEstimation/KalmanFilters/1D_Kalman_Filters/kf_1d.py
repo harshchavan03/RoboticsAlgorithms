@@ -1,6 +1,8 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
-class KalmanFilter:
+class KalmanFilter1D:
+
     def __init__(self, x0, P0, Q, R):
         self.x = x0
         self.P = P0
@@ -8,49 +10,75 @@ class KalmanFilter:
         self.R = R
 
     def predict(self):
-        # Prediction step
-        x_pred = self.x
-        P_pred = self.P + self.Q
-
-        self.x = x_pred
-        self.P = P_pred
+        self.P = self.P + self.Q
 
     def update(self, measurement):
-        # Kalman Gain
-        K = self.P / (self.P + self.R)
 
-        # Update estimate
-        self.x = self.x + K * (measurement - self.x)
+        x_pred = self.x
+        P_pred = self.P
 
-        # Update covariance
-        self.P = (1 - K) * self.P
+        K = P_pred / (P_pred + self.R)
 
-    def get_state(self):
+        self.x = x_pred + K * (measurement - x_pred)
+        self.P = (1 - K) * P_pred
+
         return self.x
-
-    def get_covariance(self):
-        return self.P
 
 true_value = 50.0
 
 np.random.seed(42)
+
 num_steps = 50
 
 measurements = true_value + np.random.normal(0, 5, num_steps)
 
-kf = KalmanFilter(
+kf = KalmanFilter1D(
     x0=0.0,
     P0=100.0,
     Q=0.1,
     R=25.0
 )
 
+estimates = []
+
 for z in measurements:
+
     kf.predict()
-    kf.update(z)
 
-final_estimate = kf.get_state()
+    estimate = kf.update(z)
 
-print(f"Final estimate : {final_estimate:.4f}")
+    estimates.append(estimate)
+
+print(f"Final estimate : {kf.x:.4f}")
 print(f"True value     : {true_value:.4f}")
-print(f"Error          : {abs(final_estimate - true_value):.4f}")
+print(f"Error          : {abs(kf.x-true_value):.4f}")
+
+plt.figure(figsize=(10,5))
+
+plt.plot(
+    measurements,
+    'x',
+    alpha=0.5,
+    label="Measurements"
+)
+
+plt.plot(
+    estimates,
+    linewidth=1.5,
+    label="Kalman Estimate"
+)
+
+plt.axhline(
+    true_value,
+    color='green',
+    linestyle='--',
+    label="True Value"
+)
+
+plt.title("1D Kalman Filter")
+plt.xlabel("Time Step")
+plt.ylabel("Value")
+plt.grid(True, alpha=0.5)
+plt.legend()
+plt.tight_layout()
+plt.show()
