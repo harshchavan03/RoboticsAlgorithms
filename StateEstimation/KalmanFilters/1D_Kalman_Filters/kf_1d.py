@@ -25,60 +25,89 @@ class KalmanFilter1D:
         return self.x
 
 true_value = 50.0
-
 np.random.seed(42)
-
 num_steps = 50
-
 measurements = true_value + np.random.normal(0, 5, num_steps)
 
-kf = KalmanFilter1D(
-    x0=0.0,
-    P0=100.0,
-    Q=0.1,
-    R=25.0
+configs = [
+
+    ("Default\nR=25, Q=0.1", 0.1, 25.0, "red"),
+
+    ("High R=400\nTrust Model more", 0.1, 400.0, "orange"),
+
+    ("Low R=1\nTrust Sensor more", 0.1, 1.0, "purple"),
+
+    ("High Q=10\n Model drifts/responds quickly", 10.0, 25.0, "blue")
+
+]
+
+fig, axes = plt.subplots(2, 2, figsize=(13,8))
+
+for ax, (title, Q, R, color) in zip(axes.flatten(), configs):
+
+    kf = KalmanFilter1D(
+        x0=0.0,
+        P0=100.0,
+        Q=Q,
+        R=R
+    )
+
+    estimates = []
+
+    for z in measurements:
+
+        kf.predict()
+
+        estimate = kf.update(z)
+
+        estimates.append(estimate)
+
+    ax.plot(
+        measurements,
+        'x',
+        color='gray',
+        markersize=4,
+        alpha=0.5,
+        label="Noisy Measurements"
+    )
+
+    ax.plot(
+        estimates,
+        color=color,
+        linewidth=2.0,
+        label="KF Estimate"
+    )
+
+    ax.axhline(
+        true_value,
+        color='green',
+        linestyle='--',
+        linewidth=1.5,
+        label="True Value"
+    )
+
+    ax.set_title(
+        title,
+        fontsize=10
+    )
+
+    ax.set_xlabel("Timestep")
+
+    ax.set_ylabel("Value")
+
+    ax.grid(
+        True,
+        alpha=0.5
+    )
+
+    ax.legend(
+        fontsize=8
+    )
+
+
+plt.suptitle(
+    "1D KF— Parameter Sensitivity(4 Graph Visualization)",
+    fontsize=15,
 )
-
-estimates = []
-
-for z in measurements:
-
-    kf.predict()
-
-    estimate = kf.update(z)
-
-    estimates.append(estimate)
-
-print(f"Final estimate : {kf.x:.4f}")
-print(f"True value     : {true_value:.4f}")
-print(f"Error          : {abs(kf.x-true_value):.4f}")
-
-plt.figure(figsize=(10,5))
-
-plt.plot(
-    measurements,
-    'x',
-    alpha=0.5,
-    label="Measurements"
-)
-
-plt.plot(
-    estimates,
-    linewidth=1.5,
-    label="Kalman Estimate"
-)
-
-plt.axhline(
-    true_value,
-    color='green',
-    linestyle='--',
-    label="True Value"
-)
-
-plt.title("1D Kalman Filter")
-plt.xlabel("Time Step")
-plt.ylabel("Value")
-plt.grid(True, alpha=0.5)
-plt.legend()
 plt.tight_layout()
 plt.show()
