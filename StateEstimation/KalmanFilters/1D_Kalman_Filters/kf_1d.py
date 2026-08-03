@@ -22,7 +22,8 @@ class KalmanFilter1D:
         self.x = x_pred + K * (measurement - x_pred)
         self.P = (1 - K) * P_pred
 
-        return self.x
+        return self.x, K
+
 
 true_value = 50.0
 np.random.seed(42)
@@ -37,11 +38,13 @@ configs = [
 
     ("Low R=1\nTrust Sensor more", 0.1, 1.0, "purple"),
 
-    ("High Q=10\n Model drifts/responds quickly", 10.0, 25.0, "blue")
+    ("High Q=10\nModel drifts/responds quickly", 10.0, 25.0, "blue")
 
 ]
 
 fig, axes = plt.subplots(2, 2, figsize=(13,8))
+default_gains = []
+default_estimates = []
 
 for ax, (title, Q, R, color) in zip(axes.flatten(), configs):
 
@@ -53,14 +56,20 @@ for ax, (title, Q, R, color) in zip(axes.flatten(), configs):
     )
 
     estimates = []
+    gains = []
 
     for z in measurements:
 
         kf.predict()
 
-        estimate = kf.update(z)
+        estimate, gain = kf.update(z)
 
         estimates.append(estimate)
+        gains.append(gain)
+
+    if Q == 0.1 and R == 25.0:
+        default_gains = gains.copy()
+        default_estimates = estimates.copy()
 
     ax.plot(
         measurements,
@@ -92,7 +101,7 @@ for ax, (title, Q, R, color) in zip(axes.flatten(), configs):
     )
 
     ax.set_xlabel("Timestep")
-	
+
     ax.set_ylabel("Value")
 
     ax.grid(
@@ -104,15 +113,114 @@ for ax, (title, Q, R, color) in zip(axes.flatten(), configs):
         fontsize=8
     )
 
-
 plt.suptitle(
-    "1D KF— Parameter Sensitivity(4 Graph Visualization)",
+    "1D KF — Parameter Sensitivity (4 Graph Visualization)",
     fontsize=15,
 )
+
 plt.tight_layout()
 plt.savefig(
     "parameter_sensitivity_analysis.png",
     dpi=300,
     bbox_inches="tight"
 )
+
+plt.show()
+
+plt.figure(figsize=(10,5))
+
+plt.plot(
+    default_gains,
+    color="royalblue",
+    linewidth=2.5,
+    label="Kalman Gain"
+)
+
+plt.title(
+    "Kalman Gain Convergence (Default: Q=0.1, R=25)"
+)
+
+plt.xlabel("Timestep")
+plt.ylabel("Kalman Gain (K)")
+plt.grid(
+    True,
+    alpha=0.5
+)
+plt.legend()
+plt.tight_layout()
+plt.savefig(
+    "kalman_gain_convergence.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+plt.show()
+
+measurement_rmse = np.sqrt(
+    np.mean((measurements - true_value) ** 2)
+)
+
+estimate_rmse = np.sqrt(
+    np.mean((np.array(default_estimates) - true_value) ** 2)
+)
+
+improvement = (
+    (measurement_rmse - estimate_rmse)
+    / measurement_rmse
+) * 100
+
+print("\nRMSE PERFORMANCE")
+
+print(f"Measurement RMSE : {measurement_rmse:.3f}")
+
+print(f"KF Estimate RMSE : {estimate_rmse:.3f}")
+
+print(f"Improvement      : {improvement:.2f}%")
+
+plt.figure(figsize=(7,5))
+
+bars = plt.bar(
+
+    ["Measurements", "Kalman Estimate"],
+
+    [measurement_rmse, estimate_rmse],
+
+    color=["gray", "royalblue"]
+
+)
+
+plt.ylabel("RMSE")
+plt.title("RMSE Comparison")
+plt.grid(
+    axis="y",
+    alpha=0.4
+)
+
+for bar in bars:
+
+    height = bar.get_height()
+    plt.text(
+
+        bar.get_x() + bar.get_width()/2,
+
+        height + 0.05,
+
+        f"{height:.2f}",
+
+        ha="center",
+
+        fontsize=10
+
+    )
+
+plt.tight_layout()
+plt.savefig(
+
+    "rmse_comparison.png",
+
+    dpi=300,
+
+    bbox_inches="tight"
+
+)
+
 plt.show()
